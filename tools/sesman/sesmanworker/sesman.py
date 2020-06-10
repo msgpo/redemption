@@ -179,8 +179,11 @@ def parse_auth(username):
                 user_at_dev, service, group = user_dev_service, group, ''
         user, sep, dev = user_at_dev.rpartition('@')
         if sep:
-            return primary, (user, dev, service, group)
-    return username, None
+            likely_ipv6 = False
+            if dev.find(":") != -1 :
+                likely_ipv6 = True
+            return primary, (user, dev, service, group), likely_ipv6
+    return username, None, False
 
 
 # PM Function
@@ -596,7 +599,7 @@ class Sesman():
     def parse_username(self, wab_login, target_login, target_device,
                        target_service, target_group):
         effective_login = None
-        wab_login, target_tuple = parse_auth(wab_login)
+        wab_login, target_tuple, likely_ipv6 = parse_auth(wab_login)
         if target_tuple is not None:
             (target_login, target_device,
              target_service, target_group) = target_tuple
@@ -615,7 +618,7 @@ class Sesman():
             Logger().info(u'ip_target="%s" real_target_device="%s"' % (
                 self.shared.get(u'ip_target'), self.shared.get(
                     u'real_target_device')))
-        return (True, "", wab_login, target_login, target_device,
+        return (True, "", likely_ipv6, wab_login, target_login, target_device,
                 target_service, target_group, effective_login)
 
     def interactive_ask_x509_connection(self):
@@ -815,7 +818,7 @@ class Sesman():
         if self.shared.get(u'login') == MAGICASK:
             return None, TR(u"Empty user, try again")
 
-        (_status, _error,
+        (_status, _error, likely_ipv6,
          wab_login, target_login, target_device,
          self.target_service_name, self.target_group,
          self.effective_login) = self.parse_username(
@@ -890,7 +893,8 @@ class Sesman():
                           or (self.engine.get_challenge() and "Challenge")
                           or "Password")
                 self.rdplog.log("AUTHENTICATION_TRY", method=method)
-                if ((is_magic_password and not is_otp)  # one-time pwd
+                if ((is_magic_password and not is_otp) # one-time pwd
+                    or likely_ipv6 is True 
                     or not self.engine.password_authenticate(
                         wab_login,
                         self.shared.get(u'ip_client'),
@@ -898,6 +902,9 @@ class Sesman():
                         self.shared.get(u'ip_target'))):
                     if is_magic_password:
                         self.engine.reset_challenge()
+                    if likely_ipv6 is True :
+                        Logger().info(u"Target is likely a ipv6 address. "
+                                      u"It's not handle yet")
                     self.rdplog.log("AUTHENTICATION_FAILURE", method=method)
                     return None, TR(u"auth_failed_wab %s") % wab_login
 
@@ -940,7 +947,7 @@ class Sesman():
         Logger().info(u"get_service")
         self.back_selector = False
         self.hide_approval_back_selector = True
-        (_status, _error,
+        (_status, _error, _likely_ipv6,
          wab_login, target_login, target_device,
          self.target_service_name, self.target_group,
          self.effective_login) = self.parse_username(
@@ -1094,7 +1101,7 @@ class Sesman():
                         target_login = MAGICASK
                         target_device = MAGICASK
                         # proto_dest = MAGICASK
-                        (_status, _error,
+                        (_status, _error, _likely_ipv6,
                          wab_login, target_login, target_device,
                          self.target_service_name, self.target_group,
                          self.effective_login) = self.parse_username(
@@ -1553,7 +1560,7 @@ class Sesman():
                      tries)
                 )
 
-                (current_status, current_error,
+                (current_status, current_error, _likely_ipv6,
                  current_wab_login, current_target_login,
                  current_target_device, self.target_service_name,
                  self.target_group,
