@@ -1386,14 +1386,12 @@ R"gen_config_ini(## Config file for RDP proxy.
 [translation]
 
 # values: 'en', 'fr'
-#_advanced
+#_hidden
 #language = en
 
+# values: 'Auto', 'EN', 'FR'
 #_advanced
-#password_en = 
-
-#_advanced
-#password_fr = 
+#login_language = Auto
 
 [internal_mod]
 

@@ -65,7 +65,6 @@ namespace
 
 class Session
 {
-    ModuleIndex last_state = MODULE_UNKNOWN;
     class KeepAlive
     {
         // Keep alive Variables
@@ -78,7 +77,6 @@ class Session
         bool connected;
 
     public:
-
         KeepAlive(std::chrono::seconds grace_delay_)
         : grace_delay(grace_delay_.count())
         , timeout(0)
@@ -189,15 +187,13 @@ class Session
         }
     };
 
+    ModuleIndex last_state = MODULE_UNKNOWN;
     Inifile & ini;
-
     time_t      perf_last_info_collect_time = 0;
     const pid_t perf_pid = getpid();
     File        perf_file = nullptr;
-
     static const time_t select_timeout_tv_sec = 3;
-
-private:
+    
     int end_session_exception(Error const& e, Inifile & ini, const ModWrapper & mod_wrapper)
     {
         if (e.id == ERR_RAIL_LOGON_FAILED_OR_WARNING){
@@ -304,7 +300,6 @@ LOG(LOG_INFO, "ModTrans=<%p> Sock=%d AutoReconnection=%s AutoReconnectable=%s Er
         return 1;
     }
 
-private:
     void wabam_settings(Inifile & ini, Front & front){
         if (ini.get<cfg::client::force_bitmap_cache_v2_with_am>()
             &&  ini.get<cfg::context::is_wabam>()) {
@@ -635,6 +630,91 @@ private:
         }
     }
 
+    void write_performance_log(time_t now) {
+        if (!this->perf_last_info_collect_time) {
+            assert(!this->perf_file);
+
+            this->perf_last_info_collect_time = now - this->select_timeout_tv_sec;
+
+            struct tm tm_;
+
+            localtime_r(&this->perf_last_info_collect_time, &tm_);
+
+            char filename[2048];
+            snprintf(filename, sizeof(filename), "%s/rdpproxy,%04d%02d%02d-%02d%02d%02d,%d.perf",
+                this->ini.template get<cfg::video::record_tmp_path>().c_str(),
+                tm_.tm_year + 1900, tm_.tm_mon + 1, tm_.tm_mday, tm_.tm_hour, tm_.tm_min, tm_.tm_sec, this->perf_pid
+                );
+
+            this->perf_file = File(filename, "w");
+            this->perf_file.write(cstr_array_view(
+                "time_t;"
+                "ru_utime.tv_sec;ru_utime.tv_usec;ru_stime.tv_sec;ru_stime.tv_usec;"
+                "ru_maxrss;ru_ixrss;ru_idrss;ru_isrss;ru_minflt;ru_majflt;ru_nswap;"
+                "ru_inblock;ru_oublock;ru_msgsnd;ru_msgrcv;ru_nsignals;ru_nvcsw;ru_nivcsw\n"));
+        }
+        else if (this->perf_last_info_collect_time + this->select_timeout_tv_sec > now) {
+            return;
+        }
+
+        struct rusage resource_usage;
+
+        getrusage(RUSAGE_SELF, &resource_usage);
+
+        do {
+            this->perf_last_info_collect_time += this->select_timeout_tv_sec;
+
+            struct tm result;
+
+            localtime_r(&this->perf_last_info_collect_time, &result);
+
+            ::fprintf(
+                  this->perf_file.get()
+                , "%lu;"
+                  "%lu;%lu;%lu;%lu;%ld;%ld;%ld;%ld;%ld;%ld;%ld;%ld;%ld;%ld;%ld;%ld;%ld;%ld\n"
+                , static_cast<unsigned long>(now)
+                , static_cast<unsigned long>(resource_usage.ru_utime.tv_sec)  /* user CPU time used */
+                , static_cast<unsigned long>(resource_usage.ru_utime.tv_usec)
+                , static_cast<unsigned long>(resource_usage.ru_stime.tv_sec)  /* system CPU time used */
+                , static_cast<unsigned long>(resource_usage.ru_stime.tv_usec)
+                , resource_usage.ru_maxrss                                    /* maximum resident set size */
+                , resource_usage.ru_ixrss                                     /* integral shared memory size */
+                , resource_usage.ru_idrss                                     /* integral unshared data size */
+                , resource_usage.ru_isrss                                     /* integral unshared stack size */
+                , resource_usage.ru_minflt                                    /* page reclaims (soft page faults) */
+                , resource_usage.ru_majflt                                    /* page faults (hard page faults)   */
+                , resource_usage.ru_nswap                                     /* swaps */
+                , resource_usage.ru_inblock                                   /* block input operations */
+                , resource_usage.ru_oublock                                   /* block output operations */
+                , resource_usage.ru_msgsnd                                    /* IPC messages sent */
+                , resource_usage.ru_msgrcv                                    /* IPC messages received */
+                , resource_usage.ru_nsignals                                  /* signals received */
+                , resource_usage.ru_nvcsw                                     /* voluntary context switches */
+                , resource_usage.ru_nivcsw                                    /* involuntary context switches */
+            );
+            this->perf_file.flush();
+        }
+        while (this->perf_last_info_collect_time + this->select_timeout_tv_sec <= now);
+    }
+
+    void set_user_preferredLanguage_on_login_language()
+    {
+        LoginLanguage login_language;
+        
+        switch (this->ini.get<cfg::translation::language>())
+        {
+            case Language::en :
+                login_language = LoginLanguage::EN;
+                break;
+            case Language::fr :
+                login_language = LoginLanguage::FR;
+                break;
+            default:
+                assert("Unknown Language value");
+        }
+        this->ini.set_acl<cfg::translation::login_language>(login_language);
+    }
+
 public:
     Session(SocketTransport&& front_trans, Inifile& ini)
     : ini(ini)
@@ -711,7 +791,11 @@ public:
                 this->write_performance_log(start_time);
             }
 
+            sesman.set_login_language
+                (ini.get<cfg::translation::login_language>());
+
             bool run_session = true;
+            bool is_first_looping_on_mod_selector = true;
 
             using namespace std::chrono_literals;
 
@@ -1127,6 +1211,11 @@ public:
                         {
                             inactivity.start_timer(ini.get<cfg::globals::session_timeout>(),
                                                    time_base.get_current_time().tv_sec);
+                            if (is_first_looping_on_mod_selector)
+                            {
+                                set_user_preferredLanguage_on_login_language();
+                                is_first_looping_on_mod_selector = false;
+                            }
                         }
                         else if (mod_wrapper.current_mod == MODULE_INTERNAL_LOGIN)
                         {
@@ -1153,9 +1242,11 @@ public:
                         sesman.set_disconnect_target();
                         mod_wrapper.disconnect();
                         if (ini.get<cfg::globals::enable_close_box>()) {
-                            rail_client_execute.enable_remote_program(front.client_info.remote_program);
-
+                            rail_client_execute.enable_remote_program
+                                (front.client_info.remote_program);
+                            
                             auto next_state = MODULE_INTERNAL_CLOSE_BACK;
+                            
                             this->new_mod(next_state, mod_wrapper, mod_factory, front);
                             mod_wrapper.get_mod()->set_mod_signal(BACK_EVENT_NONE);
                             run_session = true;
@@ -1245,74 +1336,6 @@ public:
             unlink(old_session_file);
         }
     }
-
-private:
-    void write_performance_log(time_t now) {
-        if (!this->perf_last_info_collect_time) {
-            assert(!this->perf_file);
-
-            this->perf_last_info_collect_time = now - this->select_timeout_tv_sec;
-
-            struct tm tm_;
-
-            localtime_r(&this->perf_last_info_collect_time, &tm_);
-
-            char filename[2048];
-            snprintf(filename, sizeof(filename), "%s/rdpproxy,%04d%02d%02d-%02d%02d%02d,%d.perf",
-                this->ini.template get<cfg::video::record_tmp_path>().c_str(),
-                tm_.tm_year + 1900, tm_.tm_mon + 1, tm_.tm_mday, tm_.tm_hour, tm_.tm_min, tm_.tm_sec, this->perf_pid
-                );
-
-            this->perf_file = File(filename, "w");
-            this->perf_file.write(cstr_array_view(
-                "time_t;"
-                "ru_utime.tv_sec;ru_utime.tv_usec;ru_stime.tv_sec;ru_stime.tv_usec;"
-                "ru_maxrss;ru_ixrss;ru_idrss;ru_isrss;ru_minflt;ru_majflt;ru_nswap;"
-                "ru_inblock;ru_oublock;ru_msgsnd;ru_msgrcv;ru_nsignals;ru_nvcsw;ru_nivcsw\n"));
-        }
-        else if (this->perf_last_info_collect_time + this->select_timeout_tv_sec > now) {
-            return;
-        }
-
-        struct rusage resource_usage;
-
-        getrusage(RUSAGE_SELF, &resource_usage);
-
-        do {
-            this->perf_last_info_collect_time += this->select_timeout_tv_sec;
-
-            struct tm result;
-
-            localtime_r(&this->perf_last_info_collect_time, &result);
-
-            ::fprintf(
-                  this->perf_file.get()
-                , "%lu;"
-                  "%lu;%lu;%lu;%lu;%ld;%ld;%ld;%ld;%ld;%ld;%ld;%ld;%ld;%ld;%ld;%ld;%ld;%ld\n"
-                , static_cast<unsigned long>(now)
-                , static_cast<unsigned long>(resource_usage.ru_utime.tv_sec)  /* user CPU time used */
-                , static_cast<unsigned long>(resource_usage.ru_utime.tv_usec)
-                , static_cast<unsigned long>(resource_usage.ru_stime.tv_sec)  /* system CPU time used */
-                , static_cast<unsigned long>(resource_usage.ru_stime.tv_usec)
-                , resource_usage.ru_maxrss                                    /* maximum resident set size */
-                , resource_usage.ru_ixrss                                     /* integral shared memory size */
-                , resource_usage.ru_idrss                                     /* integral unshared data size */
-                , resource_usage.ru_isrss                                     /* integral unshared stack size */
-                , resource_usage.ru_minflt                                    /* page reclaims (soft page faults) */
-                , resource_usage.ru_majflt                                    /* page faults (hard page faults)   */
-                , resource_usage.ru_nswap                                     /* swaps */
-                , resource_usage.ru_inblock                                   /* block input operations */
-                , resource_usage.ru_oublock                                   /* block output operations */
-                , resource_usage.ru_msgsnd                                    /* IPC messages sent */
-                , resource_usage.ru_msgrcv                                    /* IPC messages received */
-                , resource_usage.ru_nsignals                                  /* signals received */
-                , resource_usage.ru_nvcsw                                     /* voluntary context switches */
-                , resource_usage.ru_nivcsw                                    /* involuntary context switches */
-            );
-            this->perf_file.flush();
-        }
-        while (this->perf_last_info_collect_time + this->select_timeout_tv_sec <= now);
-    }
 };
 
 template<class SocketType, class... Args>
@@ -1333,6 +1356,9 @@ void session_start_sck(
 }
 
 } // anonymous namespace
+
+
+
 
 void session_start_tls(unique_fd sck, Inifile& ini)
 {

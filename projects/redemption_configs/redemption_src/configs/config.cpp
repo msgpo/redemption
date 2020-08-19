@@ -159,23 +159,23 @@ zstring_view Translation::translate(trkeys::TrKey_password k) const
 {
     if (this->ini) {
         switch (this->lang) {
-            case Translation::EN: {
-                auto & s = this->ini->template get<cfg::translation::password_en>();
-                if (!s.empty()) {
-                    return zstring_view(s);
-                }
-            }
-            break;
-            case Translation::FR: {
-                auto & s = this->ini->template get<cfg::translation::password_fr>();
-                if (!s.empty()) {
-                    return zstring_view(s);
-                }
-            }
-            break;
-            case Translation::MAX_LANG:
-                assert(false);
-                break;
+           case Translation::EN: {
+               if (this->ini->template get<cfg::translation::language>()
+                   == Language::en) {
+                   return k.translations[language_t::EN];
+               }
+           }
+           break;     
+           case Translation::FR: {
+               if (this->ini->template get<cfg::translation::language>()
+                   == Language::fr) {
+                   return k.translations[language_t::FR];
+               }
+           }
+           break;
+           case Translation::MAX_LANG:
+               assert(false);
+               break;
         }
     }
 

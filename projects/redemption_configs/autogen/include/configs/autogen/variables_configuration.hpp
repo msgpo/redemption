@@ -30,9 +30,9 @@ namespace configs
         // inline constexpr int section16 = 120; /* debug */
         inline constexpr int section17 = 120; /* remote_program */
         inline constexpr int section18 = 121; /* translation */
-        // inline constexpr int section19 = 124; /* internal_mod */
-        inline constexpr int section20 = 124; /* context */
-        // inline constexpr int section21 = 205; /* theme */
+        // inline constexpr int section19 = 123; /* internal_mod */
+        inline constexpr int section20 = 123; /* context */
+        // inline constexpr int section21 = 204; /* theme */
     }
 }
 
@@ -3718,33 +3718,19 @@ namespace cfg
         using mapped_type = sesman_and_spec_type;
         type value = static_cast<type>(0);
     };
-    /// type: std::string <br/>
-    /// sesman ⇒ proxy <br/>
-    /// default: {} <br/>
-    struct translation::password_en {
-        static constexpr bool is_sesman_to_proxy = true;
-        static constexpr bool is_proxy_to_sesman = false;
+    /// type: LoginLanguage <br/>
+    /// sesman ⇐ proxy <br/>
+    /// default:  = static_cast<type>(0) <br/>
+    struct translation::login_language {
+        static constexpr bool is_sesman_to_proxy = false;
+        static constexpr bool is_proxy_to_sesman = true;
         // for old cppcheck
         // cppcheck-suppress obsoleteFunctionsindex
         static constexpr ::configs::authid_t index { ::configs::cfg_indexes::section18 + 1};
-        using type = std::string;
-        using sesman_and_spec_type = std::string;
+        using type = LoginLanguage;
+        using sesman_and_spec_type = LoginLanguage;
         using mapped_type = sesman_and_spec_type;
-        type value{};
-    };
-    /// type: std::string <br/>
-    /// sesman ⇒ proxy <br/>
-    /// default: {} <br/>
-    struct translation::password_fr {
-        static constexpr bool is_sesman_to_proxy = true;
-        static constexpr bool is_proxy_to_sesman = false;
-        // for old cppcheck
-        // cppcheck-suppress obsoleteFunctionsindex
-        static constexpr ::configs::authid_t index { ::configs::cfg_indexes::section18 + 2};
-        using type = std::string;
-        using sesman_and_spec_type = std::string;
-        using mapped_type = sesman_and_spec_type;
-        type value{};
+        type value = static_cast<type>(0);
     };
 
     /// Enable target edit field in login page. <br/>
@@ -5567,9 +5553,8 @@ struct remote_program
 { static constexpr bool is_section = true; };
 
 struct translation
-: cfg::translation::password_en
-, cfg::translation::password_fr
-, cfg::translation::language
+: cfg::translation::language
+, cfg::translation::login_language
 { static constexpr bool is_section = true; };
 
 struct internal_mod
@@ -5845,8 +5830,7 @@ using VariablesAclPack = Pack<
 , cfg::crypto::key1
 , cfg::remote_program::allow_resize_hosted_desktop
 , cfg::translation::language
-, cfg::translation::password_en
-, cfg::translation::password_fr
+, cfg::translation::login_language
 , cfg::context::psid
 , cfg::context::opt_bpp
 , cfg::context::opt_height
@@ -5939,13 +5923,13 @@ struct BitFlags {
 constexpr BitFlags is_loggable{{
   0b1111111111111111111111111111111111111111111111111111011111111111
 , 0b1111111100111111111111111111111111111111111111111111111111111111
-, 0b1110111111111111111111111111111111111111111111101101111101111111
-, 0b0000000000000000000000000000000000000000000000000001111111111111
+, 0b1111011111111111111111111111111111111111111111110110111110111111
+, 0b0000000000000000000000000000000000000000000000000000111111111111
 }};
 constexpr BitFlags is_unloggable_if_value_with_password{{
   0b0000000000000000000000000000000000000000000000000000000000000000
 , 0b0000000000000000000000000000000000000000000000000000000000000000
-, 0b0000000000000000000000000000000000000000000000010000000000000000
+, 0b0000000000000000000000000000000000000000000000001000000000000000
 , 0b0000000000000000000000000000000000000000000000000000000000000000
 }};
 } // namespace configs
