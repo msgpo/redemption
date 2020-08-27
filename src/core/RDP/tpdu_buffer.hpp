@@ -25,6 +25,7 @@
 #include "transport/transport.hpp"
 
 #include "core/RDP/x224.hpp"
+#include "core/RDP/tpdu_type.hpp"
 #include "utils/parse.hpp"
 
 namespace Extractors
@@ -191,11 +192,6 @@ namespace Extractors
 
 struct TpduBuffer
 {
-    enum TpduType {
-            PDU = 0,
-        CREDSSP = 1
-    };
-
     TpduBuffer() = default;
 
     void load_data(InTransport trans)

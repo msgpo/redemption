@@ -139,7 +139,7 @@ void ProxyRecorder::front_nla(Transport & frontConn)
     std::vector<uint8_t> result;
     credssp::State st = credssp::State::Cont;
     while ((this->nego_server->credssp.ntlm_state == NTLM_STATE_WAIT_PASSWORD
-                || buffer.next(TpduBuffer::CREDSSP))
+                || buffer.next(TpduType::CREDSSP))
             && credssp::State::Cont == st) {
         if (this->nego_server->credssp.ntlm_state == NTLM_STATE_WAIT_PASSWORD){
             result << this->nego_server->credssp.authenticate_next({});
@@ -169,7 +169,7 @@ void ProxyRecorder::front_nla(Transport & frontConn)
 
 void ProxyRecorder::front_initial_pdu_negociation(Transport & backConn, bool is_nla)
 {
-    if (this->frontBuffer.next(TpduBuffer::PDU)) {
+    if (this->frontBuffer.next(TpduType::PDU)) {
         LOG_IF(this->verbosity > 8, LOG_INFO, "======== NEGOCIATING_INITIAL_PDU : front receive : frontbuffer content ======");
         writable_u8_array_view currentPacket = this->frontBuffer.current_pdu_buffer();
         LOG_IF(this->verbosity > 512, LOG_INFO, ">>>>>>>> NEGOCIATING_INITIAL_PDU frontbuffer content >>>>>>");
@@ -218,7 +218,7 @@ void ProxyRecorder::back_nla_negociation(Transport & backConn)
 
 void ProxyRecorder::back_initial_pdu_negociation(Transport & frontConn, bool is_nla)
 {
-    if (backBuffer.next(TpduBuffer::PDU)) {
+    if (backBuffer.next(TpduType::PDU)) {
         LOG_IF(this->verbosity > 8, LOG_INFO, "======== BACK_INITIAL_PDU_NEGOCIATION  : back receive : backbuffer content ======");
         writable_u8_array_view currentPacket = backBuffer.current_pdu_buffer();
         LOG_IF(this->verbosity > 512, LOG_INFO, ">>>>>>>> BACK_INITIAL_PDU_NEGOCIATION backbuffer content >>>>>>");

@@ -1,31 +1,31 @@
 #include <chrono>
 
 #include "test_only/test_framework/redemption_unit_tests.hpp"
-#include "acl/session_inactivity.hpp"
+#include "acl/inactivity.hpp"
 
-RED_AUTO_TEST_CASE(TestSessionInactivity_timer_not_started)
+RED_AUTO_TEST_CASE(TestInactivity_timer_not_started)
 {
     time_t now = 0;
     bool has_user_activity = false;
     
-    /* For start timeout, SessionInactivity::start_timer() 
+    /* For start timeout, Inactivity::start_timer() 
        must be explicitly called after */
-    SessionInactivity inactivity;
+    Inactivity inactivity;
 
-    /* On SessionInactivity constructor, 
-       SessionInactivity::_inactivity_timeout and
-       SessionInactivity::_last_activity_time must be 0 */
+    /* On Inactivity constructor, 
+       Inactivity::_inactivity_timeout and
+       Inactivity::_last_activity_time must be 0 */
     RED_CHECK_EQUAL(inactivity.get_inactivity_timeout().count(), 0);
     RED_CHECK_EQUAL(inactivity.get_last_activity_time(), 0);
     
-    /* No timeout without to call SessionInactivity::start_timer()
-       (SessionInactivity::_timer_started is false) */
+    /* No timeout without to call Inactivity::start_timer()
+       (Inactivity::_timer_started is false) */
     RED_CHECK(inactivity.activity(now, has_user_activity));
 
-    /* SessionInactivity::_inactivity_timeout and
-       SessionInactivity::_last_activity_time must be 0 
-       if SessionInactivity::start_timer() has been never called
-       (SessionInactivity::_last_activity_time can be changed into
+    /* Inactivity::_inactivity_timeout and
+       Inactivity::_last_activity_time must be 0 
+       if Inactivity::start_timer() has been never called
+       (Inactivity::_last_activity_time can be changed into
        activity() call) */
     RED_CHECK_EQUAL(inactivity.get_inactivity_timeout().count(), 0);
     RED_CHECK_EQUAL(inactivity.get_last_activity_time(), 0);
@@ -33,15 +33,15 @@ RED_AUTO_TEST_CASE(TestSessionInactivity_timer_not_started)
     RED_CHECK(!has_user_activity);
 }
 
-RED_AUTO_TEST_CASE(TestSessionInactivity_disable_timeout)
+RED_AUTO_TEST_CASE(TestInactivity_disable_timeout)
 {
     std::chrono::seconds timeout = 0s;
     time_t start = 0;
     time_t now = 60;
     bool has_user_activity = false;
-    SessionInactivity inactivity;
+    Inactivity inactivity;
     
-    /* SessionInactivity::_inactivity_timeout 
+    /* Inactivity::_inactivity_timeout 
        will be set to unlimited here because
        we pass 0s for "timeout" variable */
     inactivity.start_timer(timeout, start);
@@ -53,23 +53,23 @@ RED_AUTO_TEST_CASE(TestSessionInactivity_disable_timeout)
     RED_CHECK(!has_user_activity);
 }
 
-RED_AUTO_TEST_CASE(TestSessionInactivity_disable_timeout_because_timeout_too_high)
+RED_AUTO_TEST_CASE(TestInactivity_disable_timeout_because_timeout_too_high)
 {
     std::chrono::seconds timeout = 200h;
     time_t start = 0;
     time_t now = std::chrono::seconds(2000h).count();
     bool has_user_activity = false;
-    SessionInactivity inactivity;
+    Inactivity inactivity;
     
-    /* SessionInactivity::_inactivity_timeout will be set 
+    /* Inactivity::_inactivity_timeout will be set 
        to unlimited here because we pass 200h for "timeout variable".
        Timeout cannot exceeds 
-       SessionInactivity::ACCEPTED_TIMEOUT_MAX (= 168h) */
+       Inactivity::ACCEPTED_TIMEOUT_MAX (= 168h) */
     inactivity.start_timer(timeout, start);
     
     RED_CHECK(inactivity.activity(now, has_user_activity));
 
-    /* SessionInactivity::_inactivity_timeout
+    /* Inactivity::_inactivity_timeout
        must be equal to 0 (unlimited timeout)
        because of start_timer() call */
     RED_CHECK_EQUAL(inactivity.get_inactivity_timeout().count(), 0);
@@ -78,23 +78,23 @@ RED_AUTO_TEST_CASE(TestSessionInactivity_disable_timeout_because_timeout_too_hig
     RED_CHECK(!has_user_activity);
 }
 
-RED_AUTO_TEST_CASE(TestSessionInactivity_timeout_lower_than_minimum_then_setting_it_to_minimum)
+RED_AUTO_TEST_CASE(TestInactivity_timeout_lower_than_minimum_then_setting_it_to_minimum)
 {
     std::chrono::seconds timeout = 10s;
     time_t start = 0;
     time_t now = 20;
     bool has_user_activity = false;
-    SessionInactivity inactivity;
+    Inactivity inactivity;
     
-    /* SessionInactivity::_inactivity_timeout will be set to 30s here because
+    /* Inactivity::_inactivity_timeout will be set to 30s here because
        it cannot be lower than minimum allowed which is  
-       SessionInactivity::ACCEPTED_TIMEOUT_MIN (= 30s) */
+       Inactivity::ACCEPTED_TIMEOUT_MIN (= 30s) */
     inactivity.start_timer(timeout, start);
 
     /* No timeout because he misses 10s of inactivity */
     RED_CHECK(inactivity.activity(now, has_user_activity));
 
-    /* SessionInactivity::_inactivity_timeout must be equal
+    /* Inactivity::_inactivity_timeout must be equal
        to 30s because of start_timer */
     RED_CHECK_EQUAL(inactivity.get_inactivity_timeout().count(), 30);
     
@@ -102,20 +102,20 @@ RED_AUTO_TEST_CASE(TestSessionInactivity_timeout_lower_than_minimum_then_setting
     RED_CHECK(!has_user_activity);
 }
 
-RED_AUTO_TEST_CASE(TestSessionInactivity_start_timer_but_stop_timer_after)
+RED_AUTO_TEST_CASE(TestInactivity_start_timer_but_stop_timer_after)
 {
     std::chrono::seconds timeout = 30s;
     time_t start = 0;
     time_t now = 60;
     bool has_user_activity = false;
-    SessionInactivity inactivity;
+    Inactivity inactivity;
 
     inactivity.start_timer(timeout, start);
     inactivity.stop_timer();
 
     /* No timeout because he has been stopped
-       (SessionInactivity::_timer_started is false).
-       SessionInactivity::start_timer() must be called 
+       (Inactivity::_timer_started is false).
+       Inactivity::start_timer() must be called 
        for re-enable timeout */ 
     RED_CHECK(inactivity.activity(now, has_user_activity));
     
@@ -124,13 +124,13 @@ RED_AUTO_TEST_CASE(TestSessionInactivity_start_timer_but_stop_timer_after)
     RED_CHECK(!has_user_activity);
 }
 
-RED_AUTO_TEST_CASE(TestSessionInactivity_timer_started_but_stil_user_activity)
+RED_AUTO_TEST_CASE(TestInactivity_timer_started_but_stil_user_activity)
 {
     std::chrono::seconds timeout = 30s;
     time_t start = 0;
     time_t now = 60;
     bool has_user_activity = true;
-    SessionInactivity inactivity;
+    Inactivity inactivity;
 
     inactivity.start_timer(timeout, start);
 
@@ -140,22 +140,22 @@ RED_AUTO_TEST_CASE(TestSessionInactivity_timer_started_but_stil_user_activity)
 
     RED_CHECK_EQUAL(inactivity.get_inactivity_timeout().count(), 30);
 
-    /* SessionInactivity::_last_activity_time is equal to "now" value 
+    /* Inactivity::_last_activity_time is equal to "now" value 
        because of start_timer() call with "has_user_activity" = true */
     RED_CHECK_EQUAL(inactivity.get_last_activity_time(), now);
     
     /* has_user_activity must be false after
-       SessionInactivity::activity() call */
+       Inactivity::activity() call */
     RED_CHECK(!has_user_activity);
 }
 
-RED_AUTO_TEST_CASE(TestSessionInactivity_timer_started_but_still_no_timeout)
+RED_AUTO_TEST_CASE(TestInactivity_timer_started_but_still_no_timeout)
 {
     std::chrono::seconds timeout = 30s;
     time_t start = 0;
     time_t now = 15;
     bool has_user_activity = false;
-    SessionInactivity inactivity;
+    Inactivity inactivity;
 
     inactivity.start_timer(timeout, start);
 
@@ -167,13 +167,13 @@ RED_AUTO_TEST_CASE(TestSessionInactivity_timer_started_but_still_no_timeout)
     RED_CHECK(!has_user_activity);
 }
 
-RED_AUTO_TEST_CASE(TestSessionInactivity_timer_started_and_timeout)
+RED_AUTO_TEST_CASE(TestInactivity_timer_started_and_timeout)
 {
     std::chrono::seconds timeout = 30s;
     time_t start = 0;
     time_t now = 35;
     bool has_user_activity = false;
-    SessionInactivity inactivity;
+    Inactivity inactivity;
 
     inactivity.start_timer(timeout, start);
 
@@ -182,7 +182,7 @@ RED_AUTO_TEST_CASE(TestSessionInactivity_timer_started_and_timeout)
     
     RED_CHECK_EQUAL(inactivity.get_inactivity_timeout().count(), 30);
 
-    /* SessionInactivity::_last_activity_time equal 
+    /* Inactivity::_last_activity_time equal 
        also to "now" value when
        timeout happens */
     RED_CHECK_EQUAL(inactivity.get_last_activity_time(), now);
@@ -190,14 +190,14 @@ RED_AUTO_TEST_CASE(TestSessionInactivity_timer_started_and_timeout)
     RED_CHECK(!has_user_activity);
 }
 
-RED_AUTO_TEST_CASE(TestSessionInactivity_timer_started_and_timeout_after_last_activity_time_update)
+RED_AUTO_TEST_CASE(TestInactivity_timer_started_and_timeout_after_last_activity_time_update)
 {
     std::chrono::seconds timeout = 30s;
     time_t start = 0;
     time_t now = 15;
     time_t now2 = 60;
     bool has_user_activity = true;
-    SessionInactivity inactivity;
+    Inactivity inactivity;
 
     inactivity.start_timer(timeout, start);
 
@@ -211,7 +211,7 @@ RED_AUTO_TEST_CASE(TestSessionInactivity_timer_started_and_timeout_after_last_ac
     RED_CHECK(!has_user_activity);
 
     /* Timeout here because the first call has updated
-       SessionInactivity::_last_activity_time which is equal to "now" (= 15s).
+       Inactivity::_last_activity_time which is equal to "now" (= 15s).
        Then, on the activity() call below, 
        the timeout happens because user is in inactivity since 15s :
        now2 > last_activity_time + inactivity_timeout

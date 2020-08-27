@@ -146,7 +146,7 @@ public:
                     case ProxyRecorder::PState::NEGOCIATING_FRONT_STEP1:
                         if (FD_ISSET(front_fd, &rset)) {
                             conn.frontBuffer.load_data(frontConn);
-                            if (conn.frontBuffer.next(TpduBuffer::PDU)) {
+                            if (conn.frontBuffer.next(TpduType::PDU)) {
                                 conn.front_step1(frontConn);
                                 u8_array_view key = front_nla_tee_trans.get_public_key();
                                 memcpy(front_public_key, key.data(), key.size());

@@ -363,7 +363,7 @@ bool RdpNegociation::recv_data(TpduBuffer& buf)
     }
 
     buf.load_data(this->trans);
-    while (buf.next(TpduBuffer::PDU)) {
+    while (buf.next(TpduType::PDU)) {
         InStream x224_data(buf.current_pdu_buffer());
         switch (this->state)
         {

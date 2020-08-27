@@ -25,6 +25,7 @@
 #include "core/RDP/nla/nla_client_ntlm.hpp"
 #include "core/RDP/nla/nla_client_kerberos.hpp"
 #include "core/RDP/tpdu_buffer.hpp"
+#include "core/RDP/tpdu_type.hpp"
 #include "core/RDP/x224.hpp"
 
 #include "utils/sugar/multisz.hpp"
@@ -226,7 +227,7 @@ bool RdpNego::recv_next_data(TpduBuffer& tpdubuf, Transport& trans, ServerNotifi
         case State::Negociate:
             LOG_IF(bool(this->verbose & Verbose::negotiation), LOG_INFO, "RdpNego::recv_next_data::Negociate");
             tpdubuf.load_data(trans);
-            if (!tpdubuf.next(TpduBuffer::PDU)) {
+            if (!tpdubuf.next(TpduType::PDU)) {
                 return true;
             }
             do {
@@ -236,7 +237,7 @@ bool RdpNego::recv_next_data(TpduBuffer& tpdubuf, Transport& trans, ServerNotifi
                                     (this->tls) ? "TLS" :
                                                   "RDP");
                 this->state = this->recv_connection_confirm(trans, InStream(tpdubuf.current_pdu_buffer()), notifier);
-            } while (this->state == State::Negociate && tpdubuf.next(TpduBuffer::PDU));
+            } while (this->state == State::Negociate && tpdubuf.next(TpduType::PDU));
             return (this->state != State::Final);
 
         case State::SslHybrid:
@@ -259,11 +260,11 @@ bool RdpNego::recv_next_data(TpduBuffer& tpdubuf, Transport& trans, ServerNotifi
                 return true;
             }
 
-            while (this->state == State::Credssp && tpdubuf.next(TpduBuffer::CREDSSP)) {
+            while (this->state == State::Credssp && tpdubuf.next(TpduType::CREDSSP)) {
                 this->state = this->recv_credssp(trans, tpdubuf.current_pdu_buffer());
             }
 
-            while (this->state == State::Negociate && tpdubuf.next(TpduBuffer::PDU)) {
+            while (this->state == State::Negociate && tpdubuf.next(TpduType::PDU)) {
                 this->state = this->recv_connection_confirm(trans, InStream(tpdubuf.current_pdu_buffer()), notifier);
             }
             return (this->state != State::Final);

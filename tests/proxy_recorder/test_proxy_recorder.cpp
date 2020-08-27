@@ -279,7 +279,7 @@ RED_AUTO_TEST_CASE_WF(TestNLAOnSiteCapture, wf)
     // Receiving data from Client : x224
     conn.frontBuffer.load_data(frontConn);
 
-    RED_REQUIRE(conn.frontBuffer.next(TpduBuffer::PDU));
+    RED_REQUIRE(conn.frontBuffer.next(TpduType::PDU));
     conn.front_step1(frontConn);
     hexdump(front_public_key, 16);
     // front public key ready from here

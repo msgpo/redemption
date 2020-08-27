@@ -114,9 +114,13 @@ exe rdpproxy :
   <library>snappy
   <library>src/RAIL/client_execute.o
   <library>src/acl/acl_serializer.o
+  <library>src/acl/end_session_error.o
+  <library>src/acl/inactivity.o
+  <library>src/acl/keep_alive.o
   <library>src/acl/module_manager/create_module_rdp.o
   <library>src/acl/module_manager/create_module_vnc.o
-  <library>src/acl/session_inactivity.o
+  <library>src/acl/multiplexor_select.o
+  <library>src/acl/session_mod_replacer.o
   <library>src/capture/agent_data_extractor.o
   <library>src/capture/capture.o
   <library>src/capture/fdx_capture.o
@@ -141,6 +145,7 @@ exe rdpproxy :
   <library>src/core/font.o
   <library>src/core/mainloop.o
   <library>src/core/session.o
+  <library>src/core/session_start.o
   <library>src/gdi/clip_from_cmd.o
   <library>src/gdi/graphic_api.o
   <library>src/gdi/protected_graphics.o
@@ -597,6 +602,13 @@ test-run tests/acl/test_end_session_warning :
 :
   <covfile>src/acl/end_session_warning.hpp
 ;
+test-run tests/acl/test_inactivity :
+  $(REDEMPTION_TEST_PATH)/acl/test_inactivity.cpp
+:
+  <library>src/acl/inactivity.o
+  <covfile>src/acl/inactivity.cpp
+  <covfile>src/acl/inactivity.hpp
+;
 test-run tests/acl/test_license_api :
   $(REDEMPTION_TEST_PATH)/acl/test_license_api.cpp
 :
@@ -670,13 +682,6 @@ test-run tests/acl/test_sesman :
   <library>src/utils/cfgloader.o
   <library>src/utils/pattutils.o
   <covfile>src/acl/sesman.hpp
-;
-test-run tests/acl/test_session_inactivity :
-  $(REDEMPTION_TEST_PATH)/acl/test_session_inactivity.cpp
-:
-  <library>src/acl/session_inactivity.o
-  <covfile>src/acl/session_inactivity.cpp
-  <covfile>src/acl/session_inactivity.hpp
 ;
 test-run tests/acl/test_session_logfile :
   $(REDEMPTION_TEST_PATH)/acl/test_session_logfile.cpp
@@ -2394,9 +2399,13 @@ test-run tests/core/test_mainloop :
   <library>snappy
   <library>src/RAIL/client_execute.o
   <library>src/acl/acl_serializer.o
+  <library>src/acl/end_session_error.o
+  <library>src/acl/inactivity.o
+  <library>src/acl/keep_alive.o
   <library>src/acl/module_manager/create_module_rdp.o
   <library>src/acl/module_manager/create_module_vnc.o
-  <library>src/acl/session_inactivity.o
+  <library>src/acl/multiplexor_select.o
+  <library>src/acl/session_mod_replacer.o
   <library>src/capture/agent_data_extractor.o
   <library>src/capture/capture.o
   <library>src/capture/fdx_capture.o
@@ -2420,6 +2429,7 @@ test-run tests/core/test_mainloop :
   <library>src/core/font.o
   <library>src/core/mainloop.o
   <library>src/core/session.o
+  <library>src/core/session_start.o
   <library>src/gdi/clip_from_cmd.o
   <library>src/gdi/graphic_api.o
   <library>src/gdi/protected_graphics.o
@@ -2537,9 +2547,13 @@ test-run tests/core/test_session :
   <library>snappy
   <library>src/RAIL/client_execute.o
   <library>src/acl/acl_serializer.o
+  <library>src/acl/end_session_error.o
+  <library>src/acl/inactivity.o
+  <library>src/acl/keep_alive.o
   <library>src/acl/module_manager/create_module_rdp.o
   <library>src/acl/module_manager/create_module_vnc.o
-  <library>src/acl/session_inactivity.o
+  <library>src/acl/multiplexor_select.o
+  <library>src/acl/session_mod_replacer.o
   <library>src/capture/agent_data_extractor.o
   <library>src/capture/capture.o
   <library>src/capture/fdx_capture.o
@@ -2629,8 +2643,6 @@ test-run tests/core/test_session :
   <library>src/transport/out_meta_sequence_transport.o
   <library>src/transport/snappy_compression_transport.o
   <library>src/transport/socket_transport.o
-  <library>src/transport/ws_transport.o
-  <library>src/utils/base64.o
   <library>src/utils/bitmap.o
   <library>src/utils/bitmap_data_allocator.o
   <library>src/utils/bitmap_from_file.o
@@ -2656,6 +2668,7 @@ test-run tests/core/test_session :
   $(BOOST_STACKTRACE_LINKFLAGS)
   <covfile>src/core/session.cpp
   <covfile>src/core/session.hpp
+  <define>ZLIB_CONST
 ;
 test-run tests/front/test_front :
   $(REDEMPTION_TEST_PATH)/front/test_front.cpp
@@ -5679,9 +5692,13 @@ test-run tests/utils/winpr/test_pattern :
 obj projects/redemption_configs/redemption_src/configs/config.o : $(REDEMPTION_CONFIG_PATH)/redemption_src/configs/config.cpp ;
 obj src/RAIL/client_execute.o : $(REDEMPTION_SRC_PATH)/RAIL/client_execute.cpp ;
 obj src/acl/acl_serializer.o : $(REDEMPTION_SRC_PATH)/acl/acl_serializer.cpp ;
+obj src/acl/end_session_error.o : $(REDEMPTION_SRC_PATH)/acl/end_session_error.cpp : <define>ZLIB_CONST ;
+obj src/acl/inactivity.o : $(REDEMPTION_SRC_PATH)/acl/inactivity.cpp ;
+obj src/acl/keep_alive.o : $(REDEMPTION_SRC_PATH)/acl/keep_alive.cpp ;
 obj src/acl/module_manager/create_module_rdp.o : $(REDEMPTION_SRC_PATH)/acl/module_manager/create_module_rdp.cpp ;
 obj src/acl/module_manager/create_module_vnc.o : $(REDEMPTION_SRC_PATH)/acl/module_manager/create_module_vnc.cpp : <define>ZLIB_CONST ;
-obj src/acl/session_inactivity.o : $(REDEMPTION_SRC_PATH)/acl/session_inactivity.cpp ;
+obj src/acl/multiplexor_select.o : $(REDEMPTION_SRC_PATH)/acl/multiplexor_select.cpp ;
+obj src/acl/session_mod_replacer.o : $(REDEMPTION_SRC_PATH)/acl/session_mod_replacer.cpp : <define>ZLIB_CONST ;
 obj src/capture/agent_data_extractor.o : $(REDEMPTION_SRC_PATH)/capture/agent_data_extractor.cpp ;
 obj src/capture/capture.o : $(REDEMPTION_SRC_PATH)/capture/capture.cpp : <define>ZLIB_CONST ;
 obj src/capture/fdx_capture.o : $(REDEMPTION_SRC_PATH)/capture/fdx_capture.cpp ;
@@ -5718,6 +5735,7 @@ obj src/core/events.o : $(REDEMPTION_SRC_PATH)/core/events.cpp ;
 obj src/core/font.o : $(REDEMPTION_SRC_PATH)/core/font.cpp ;
 obj src/core/mainloop.o : $(REDEMPTION_SRC_PATH)/core/mainloop.cpp ;
 obj src/core/session.o : $(REDEMPTION_SRC_PATH)/core/session.cpp : <define>ZLIB_CONST ;
+obj src/core/session_start.o : $(REDEMPTION_SRC_PATH)/core/session_start.cpp : <define>ZLIB_CONST ;
 obj src/gdi/clip_from_cmd.o : $(REDEMPTION_SRC_PATH)/gdi/clip_from_cmd.cpp ;
 obj src/gdi/graphic_api.o : $(REDEMPTION_SRC_PATH)/gdi/graphic_api.cpp ;
 obj src/gdi/protected_graphics.o : $(REDEMPTION_SRC_PATH)/gdi/protected_graphics.cpp ;
@@ -5840,9 +5858,9 @@ alias test_acl_new_line_converter : tests/acl/module_manager/test_acl_new_line_c
 alias test_acl_serializer : tests/acl/test_acl_serializer ;
 alias test_auth_api : tests/acl/test_auth_api ;
 alias test_end_session_warning : tests/acl/test_end_session_warning ;
+alias test_inactivity : tests/acl/test_inactivity ;
 alias test_license_api : tests/acl/test_license_api ;
 alias test_sesman : tests/acl/test_sesman ;
-alias test_session_inactivity : tests/acl/test_session_inactivity ;
 alias test_session_logfile : tests/acl/test_session_logfile ;
 alias test_latin_to_cyrillic : tests/capture/ocr/locale/test_latin_to_cyrillic ;
 alias test_capture : tests/capture/test_capture ;
@@ -6186,9 +6204,9 @@ alias test_acl_new_line_converter.coverage : tests/acl/module_manager/test_acl_n
 alias test_acl_serializer.coverage : tests/acl/test_acl_serializer.coverage ;
 alias test_auth_api.coverage : tests/acl/test_auth_api.coverage ;
 alias test_end_session_warning.coverage : tests/acl/test_end_session_warning.coverage ;
+alias test_inactivity.coverage : tests/acl/test_inactivity.coverage ;
 alias test_license_api.coverage : tests/acl/test_license_api.coverage ;
 alias test_sesman.coverage : tests/acl/test_sesman.coverage ;
-alias test_session_inactivity.coverage : tests/acl/test_session_inactivity.coverage ;
 alias test_session_logfile.coverage : tests/acl/test_session_logfile.coverage ;
 alias test_latin_to_cyrillic.coverage : tests/capture/ocr/locale/test_latin_to_cyrillic.coverage ;
 alias test_capture.coverage : tests/capture/test_capture.coverage ;
@@ -6516,9 +6534,9 @@ alias tests/acl.norec :
   tests/acl/test_acl_serializer
   tests/acl/test_auth_api
   tests/acl/test_end_session_warning
+  tests/acl/test_inactivity
   tests/acl/test_license_api
   tests/acl/test_sesman
-  tests/acl/test_session_inactivity
   tests/acl/test_session_logfile
 ;
 alias tests/capture/ocr/locale.norec :

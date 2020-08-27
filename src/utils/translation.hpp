@@ -479,3 +479,17 @@ struct Translator
 private:
     Translation::language_t lang;
 };
+
+inline LoginLanguage to_login_language(Language lang)
+{
+    switch (lang)
+    {
+        case Language::en :
+            return LoginLanguage::EN;
+        case Language::fr :
+            return LoginLanguage::FR;
+        default :
+            assert("Unknown Language value");
+    }
+    return LoginLanguage();
+}

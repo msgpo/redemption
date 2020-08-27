@@ -334,7 +334,7 @@ RED_AUTO_TEST_CASE(TestTpdu)
     TpduBuffer buf;
     buf.load_data(logtrans);
     RED_CHECK_EQUAL(buf.remaining(), 500);
-    RED_CHECK_EQUAL(true, buf.next(TpduBuffer::CREDSSP));
+    RED_CHECK_EQUAL(true, buf.next(TpduType::CREDSSP));
 
     std::vector<uint8_t> negotiate{
        0x30, 0x37, 0xa0, 0x03, 0x02, 0x01, 0x06, 0xa1, 0x30, 0x30, 0x2e, 0x30, 0x2c, 0xa0, 0x2a, 0x04, //07......00.0,.*. !
@@ -385,7 +385,7 @@ RED_AUTO_TEST_CASE(TestTpdu)
         0x3f, 0x08, 0xd0, 0xc2, 0xe4, 0x75, 0x66, 0x10, 0x49, 0x7b, 0xbd, 0x8d, 0xf7                    //?....uf.I{... !]
     };
 
-    RED_CHECK_EQUAL(true, buf.next(TpduBuffer::CREDSSP));
+    RED_CHECK_EQUAL(true, buf.next(TpduType::CREDSSP));
     RED_CHECK_EQUAL(buf.remaining(), 443);
     RED_CHECK(authenticate == buf.current_pdu_buffer());
 
@@ -406,11 +406,11 @@ RED_AUTO_TEST_CASE(TestTpdu)
         0xd5, 0xf3, 0xa7, 0xb5, 0x33, 0xd5, 0x62, 0x8d, 0x93, 0x18, 0x54, 0x39, 0x8a, 0xe7              // ....3.b...T9..
     };
 
-    RED_CHECK_EQUAL(true, buf.next(TpduBuffer::CREDSSP));
+    RED_CHECK_EQUAL(true, buf.next(TpduType::CREDSSP));
     RED_CHECK_EQUAL(buf.remaining(), 94);
 
     RED_CHECK(ts_credentials == buf.current_pdu_buffer());
-    RED_CHECK_EQUAL(false, buf.next(TpduBuffer::CREDSSP));
+    RED_CHECK_EQUAL(false, buf.next(TpduType::CREDSSP));
     RED_CHECK_EQUAL(buf.remaining(), 0);
     RED_TEST_MESSAGE("\n");
 }

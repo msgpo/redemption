@@ -282,7 +282,7 @@ public:
                         switch(pstate) {
                         case PState::NEGOTIATING_FRONT_HELLO:
                             LOG(LOG_INFO, "NEGOTIATING_FRONT_HELLO");
-                            if (buffer.next(TpduBuffer::PDU)) {
+                            if (buffer.next(TpduType::PDU)) {
                                 bool bogus_neg_req = false;
                                 this->front_CR_TPDU = this->front_hello(trans, buffer.current_pdu_buffer(), bogus_neg_req, this->verbosity);
                             }
@@ -290,7 +290,7 @@ public:
 
                         case PState::NEGOTIATING_FRONT_NLA:
                             LOG(LOG_INFO, "NEGOTIATING_FRONT_NLA");
-                            if (buffer.next(TpduBuffer::CREDSSP)) {
+                            if (buffer.next(TpduType::CREDSSP)) {
                                 this->front_nla(trans, buffer.current_pdu_buffer());
                             }
                             if (this->nego_server->credssp.ntlm_state == NTLM_STATE_WAIT_PASSWORD){
@@ -305,7 +305,7 @@ public:
 
                         case PState::NEGOTIATING_FRONT_INITIAL_PDU:
                             LOG(LOG_INFO, "NEGOTIATING_FRONT_INITIAL_PDU");
-                            if (buffer.next(TpduBuffer::PDU)) {
+                            if (buffer.next(TpduType::PDU)) {
                                 this->front_initial_pdu_negociation(buffer);
                             }
                             break;

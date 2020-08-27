@@ -22,10 +22,10 @@
 
 #include "utils/difftimeval.hpp"
 
-class SessionInactivity
+class Inactivity
 {
 public:
-    SessionInactivity() noexcept;
+    Inactivity() noexcept;
     std::chrono::seconds get_inactivity_timeout() const noexcept;
     time_t get_last_activity_time() const noexcept;
     bool get_timer_started() const noexcept;
