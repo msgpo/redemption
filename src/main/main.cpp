@@ -54,6 +54,7 @@
 
 #include <sys/types.h>
 #include <dirent.h>
+#include <libintl.h>
 
 
 inline void daemonize(const char * pid_file)
@@ -213,6 +214,45 @@ inline int shutdown()
     }
 
     return 0;
+}
+
+// init user messages internationalization with GNU gettext framework
+inline void init_user_messages_i18n()
+{
+    setlocale(LC_MESSAGES, "");
+
+    constexpr const char *DOMAIN_NAME = "redemption";
+    constexpr std::string_view GETTEXTINSTALL_DIRNAME = "gettextinstall";
+    zstring_view share_path = app_path(AppPath::Share);
+    std::string gettextinstall_path;
+
+    gettextinstall_path.reserve(share_path.size()
+                                + GETTEXTINSTALL_DIRNAME.size()
+                                + 2);
+    gettextinstall_path.append(share_path.c_str(),
+                               share_path.size());
+    gettextinstall_path.append("/", 1);
+    gettextinstall_path.append(GETTEXTINSTALL_DIRNAME.data(),
+                               GETTEXTINSTALL_DIRNAME.size());
+    gettextinstall_path.append("/", 1);
+    if (!dir_exist(gettextinstall_path.c_str()))
+    {  
+        LOG(LOG_INFO, "need a build with gettextinstall rule for use i18n");
+        return;
+    }
+        
+    /* bindtextdomain() and textdomain() will fail 
+       if memory allocation failure occurs */
+    if (!bindtextdomain(DOMAIN_NAME, gettextinstall_path.c_str()))
+    {
+        LOG(LOG_ERR, "bindtextdomain() failed (errno : %d)", errno);
+        throw std::bad_alloc();
+    }
+    if (!textdomain(DOMAIN_NAME))
+    {
+        LOG(LOG_ERR, "textdomain() failed (errno : %d)", errno);
+        throw std::bad_alloc();
+    }
 }
 
 
@@ -437,6 +477,8 @@ int main(int argc, char** argv)
             static_cast<ocr::locale::LocaleId::type_id>(ini.get<cfg::ocr::locale>())
         );
     }
+
+    init_user_messages_i18n();
 
     LOG(LOG_INFO, "ReDemPtion " VERSION " starting");
     redemption_main_loop(

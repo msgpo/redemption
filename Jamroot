@@ -315,3 +315,20 @@ make ppocr_resources :
 ;
 
 ## } ppocr resources
+
+
+
+actions make_gettextinstall
+{
+    mkdir $(<) > /dev/null 2>&1
+    tools/i18n/gen_msg_catalog.py -C -p tools/i18n -b $(<)
+}
+
+explicit gettextinstall ;
+always gettextinstall ;
+make gettextinstall : : @make_gettextinstall : <location>$(SHARE_PREFIX) ;
+
+# Compile/recompile all message catalogs to binary format (as administrator) :
+#
+#   bjam gettextinstall
+#
